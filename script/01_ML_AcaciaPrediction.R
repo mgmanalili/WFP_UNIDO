@@ -8,92 +8,52 @@ library(plainview)
 library(rgdal)
 library(glcm)
 library(RStoolbox)
+library(maptools)
 
-#https://www.rdocumentation.org/packages/RStoolbox/versions/0.2.6/topics/spectralIndices
+args <- commandArgs(trailingOnly = TRUE)
 
-data_root <- "/Users/michael/GEO/DataScience/acacia_namibia/data/"
+
+image <- args[1]
+roi <- args[2]
+out <- args[3]
+
+sat_img <- raster(image)
+trainSites <- read_sf(roi)
+out = out
 
 ## LOAD RASTER DATA
-sat_img <- raster("/Users/michael/GEO/DataScience/acacia_namibia/data/Camp4_utm.tif")
-sat_img_s <- stack("/Users/michael/GEO/DataScience/acacia_namibia/data/Camp4_utm.tif")
-#dem <- raster(paste(data_root, "dem.tif", sep="")) #
-#lon <- init(glcm_var, 'x') #
-#lat <- init(glcm_var, 'y') #
-spplot(sat_img)
-
-glcm_brick <- stack(rglcm)
-#glcm <- raster(paste(data_root,"glcm_out.tif", sep = ""))
-#LOAD VECTOR DATA
-acacia_point_obs <- read_sf(paste(data_root,"acacia_obs_namibia.shp", sep = ""))
-acacia_freq_obs <- read_sf(paste(data_root, "Acacia_Observation_Frequency.shp", sep = ""))
-site_visit <- read_sf(paste(data_root, "site_visit.shp", sep = ""))
-#trainSites <- read_sf(paste(data_root, "roi.shp", sep = ""))
-trainSites <- read_sf(paste(data_root, "camp4.shp", sep = ""))
-
-## DERIVE PREDICTOR RASTERS
-## GLCM Operation
 rglcm <- glcm(sat_img,window = c(9,9), 
               shift = c(1,1),
               statistics = c("variance", "homogeneity","dissimilarity","entropy"))
-#"mean", "variance", "homogeneity", "contrast", 
-#"dissimilarity", "entropy", "second_moment"
-
+glcm_brick <- stack(rglcm)
 ## PCA Operation
+sat_img_s <- stack(sat_img)
 rand_sam <- sampleRandom(sat_img_s, 10000) # sample 5000 random grid cells
 pca <- prcomp(rand_sam, scale=TRUE, retx=FALSE) 
 pca_brick <- predict(sat_img_s, pca, index=1:3) # create new rasters based on PCA predictions
-
-
-
-nlayers(rglcm)
-
-## VIEWS AND PLOTS (OPTIONAL run)
-viewRGB(sat_img_s, r = 3, g = 2, b = 1,map.types = "Esri.WorldImagery")
-#plot(st_geometry(acacia_point_obs))
-#plot(st_geometry(acacia_freq_obs))
-#print(acacia_freq_obs)
-#mapview(acacia_freq_obs, zcol = "count_att", legend = TRUE) + mapview(acacia_point_obs)
-mapview(trainSites, zcol = "type", legend = TRUE,map.types = "Esri.WorldImagery")+ mapview(sat_img) + mapview(site_visit)
-#plot(rglcm)
-#ggRGB(pca1$map,1,2,3)
-#spplot(scale(pca_brick))
-
-## WRITE RESULTS TO FILE
-#writeRaster(your_single_band_raster, "/Users/michael/GEO/DataScience/acacia_namibia/data/glcm_out.tif")
-#writeRaster(predStack, "/Users/michael/GEO/DataScience/acacia_namibia/data/predStack.tif", options="COMPRESS=LZW")
-
-## EXPORT SINGLE RASTER FROM MULTIBAND FILE
 #nlayers(rglcm)
-#for(i in 1:nlayers(rglcm)){
-#  band<-rglcm[[i]]
-#  #save raster in a separate file
-#  writeRaster(band,paste(data_root,"glcm_1.tif", sep=''))
-#}
 
 ## MACHINE LEARNING MODEL
-predStack <- stack(rglcm,pca_brick,sat_img_s) #Add DEM - Resample and clip in QGIS
+predStack <- stack(rglcm,pca_brick,sat_img) #Add DEM - Resample and clip in QGIS
 nlayers(predStack)
 names(predStack)
-names(predStack) <- c('variance', 'homogeneity', 'dissimilarity', 'entropy','pc1','pc2','pc3','red', 'green', 'blue')
+names(predStack) <- c('glcm_variance', 'glcm_homogeneity', 'glcm_dissimilarity', 'glcm_entropy','layer.1','layer.2','layer.3','raw_4_ML')
 names(predStack)
-spplot(scale(predStack))
+#spplot(scale(predStack))
 
 trainSites <- st_transform(trainSites,crs=projection(predStack))
-
-#viewRGB(predStack, r = 3, g = 2, b = 1, map.types = "Esri.WorldImagery")+
-#  mapview(trainSites)
 
 extr <- extract(predStack, trainSites, df=TRUE)
 #extr <- merge(x = extr, y = trainSites, by = "id")
 extr <- merge(extr, trainSites, by.x="ID", by.y="id",all.y=TRUE)
 
-head(extr)
+#head(extr)
 
 set.seed(100)
 trainids <- createDataPartition(extr$ID,list=FALSE,p=0.15)
 trainDat <- extr[trainids,]
 
-predictors <- c('variance', 'homogeneity', 'dissimilarity', 'entropy','pc1','pc2','pc3','red', 'green', 'blue')
+predictors <- c('glcm_variance', 'glcm_homogeneity', 'glcm_dissimilarity', 'glcm_entropy','layer.1','layer.2','layer.3','raw_4_ML')
 response <- "type"
 
 ctrl <- trainControl(method="cv", 
@@ -122,16 +82,18 @@ prediction <- predict(predStack,model)
 #assign some colors that are easy to interpret visually:
 #cols_df <- data.frame("Type_en"=c("AC","BU","DV","PO", "RD","SO","SV","SH","GR"),
 #                      "col"=c("red", "white", "orange","green","black","blue","pink", "yellow", "violet"))
-cols_df <- data.frame("Type_en"=c("AC","BU","SO"),
-                      "col"=c("green", "white", "orange"))
+#cols_df <- data.frame("Type_en"=c("AC","BU","SO"),
+#                      "col"=c("green", "white", "orange"))
+cols_df <- data.frame("Type_en"=c("AC","SO"),
+                      "col"=c("green","orange"))
 
 
 #plot prediction:
-spplot(prediction,col.regions=as.character(cols_df$col))
+#spplot(prediction,col.regions=as.character(cols_df$col))
 
-spfolds <- read_sf(paste(data_root,"spfolds.shp", sep = ""))
-mapview(spfolds,map.types = "Esri.WorldImagery")+
-  mapview(trainSites)
+#spfolds <- read_sf(paste(data_root,"spfolds.shp", sep = ""))
+#mapview(spfolds,map.types = "Esri.WorldImagery")+
+#  mapview(trainSites)
 
 set.seed(100)
 folds <- CreateSpacetimeFolds(trainDat, spacevar="ID", k=10)
@@ -155,9 +117,8 @@ cvPredictions <- model_spatialCV$pred[model_spatialCV$pred$mtry==model_spatialCV
 confusionMatrix(cvPredictions$pred,cvPredictions$obs)$overall
 
 prediction_sp <- predict(predStack,model_spatialCV)
-spplot(prediction_sp,col.regions=as.character(cols_df$col))
-
-plot(varImp(model))
+#spplot(prediction_sp,col.regions=as.character(cols_df$col))
+#plot(varImp(model))
 
 ffsmodel_spatial <- ffs(trainDat[,predictors],
                         trainDat[,response],
@@ -167,16 +128,19 @@ ffsmodel_spatial <- ffs(trainDat[,predictors],
                         trControl = ctrl_sp,
                         ntree=75) 
 
-plot_ffs(ffsmodel_spatial)
+#plot_ffs(ffsmodel_spatial)
 
-plot_ffs(ffsmodel_spatial, plotType="selected")
-
+#plot_ffs(ffsmodel_spatial, plotType="selected")
+#print(ffsmodel_spatial)
 prediction_ffs <- predict(predStack,ffsmodel_spatial)
 spplot(prediction_ffs,col.regions=as.character(cols_df$col))
 
 cvPredictions <- ffsmodel_spatial$pred[ffsmodel_spatial$pred$mtry==ffsmodel_spatial$bestTune$mtry,]
 confusionMatrix(cvPredictions$pred,cvPredictions$obs)$overall
-writeRaster(prediction, "/Users/michael/GEO/DataScience/acacia_namibia/data/pred_camp4.tif")
+writeRaster(prediction_ffs, out,overwrite=TRUE)
 
+#spatial_pred("/Users/michael/GEO/DataScience/acacia_namibia/sample_data/raw_4_ML.tif",
+#             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/roi.shp",
+#             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/pred.tif")
 
 
