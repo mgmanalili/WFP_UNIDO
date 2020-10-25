@@ -27,6 +27,7 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
                 
                 #args <- commandArgs(trailingOnly = TRUE)
                 sat_img <- raster(arg1_image)
+                acc_rpj <- projectRaster(sat_img, crs=CRS('+init=EPSG:32733'))
                 proj4string(sat_img)
                 ##imagery - An object of class raster on which to perform the segmentation. The image should be projected
                 ##epsg - The EPSG code of the reference system of the image.
@@ -36,8 +37,7 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
                 ##DIST - Maximum value of the crown diameter of a detected tree (in meters).
                 ##th - Digital number value below which a pixel cannot be a local maxima.
                 ##ischm TRUE if the imagery is a Canopy Height Model (CHM). Default: FALSE.
-                acc_rpj <- projectRaster(sat_img, crs=CRS('+init=EPSG:32733'))
-                #seg <- itcIMG(sat_img,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
+                
                 seg <- itcIMG(acc_rpj,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
                 writeOGR(seg, arg2_out_raw, "segmentation", driver = "ESRI Shapefile")
                 
@@ -59,7 +59,7 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
 #             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/acacia_poly_raw.shp",
 #             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/acacia_poly_vol_FINAL.shp")
 
-segmentation(arg1_image, arg2_out_raw, arg3_result)
+#segmentation(arg1_image, arg2_out_raw, arg3_result)
 
 #Below is a work-in progress. DO NOT DELETE! Keep commented. - MM
 #segmentation()
@@ -70,11 +70,15 @@ segmentation(arg1_image, arg2_out_raw, arg3_result)
 ##vector_list <- file(args[2])
 #vector_list <- file('/Users/michael/GEO/DataScience/acacia_namibia/out_shp.txt')
 #vlist <- readLines(vector_list, warn=FALSE)
+
+#k_list <- file('/Users/michael/GEO/DataScience/acacia_namibia/out_shp_v.txt')
+#klist <- readLines(vector_list, warn=FALSE)
 ##print(vlist)
 #print('Running ITC Segmentation. Please wait...')
 #for(i in flist)
 #  for(j in vlist)
-#{segmentation(i, j)}
+#    for(k in klist)
+#{segmentation(i, j, k)}
 
 #a = mapply(c,flist, vlist, SIMPLIFY = FALSE)
 

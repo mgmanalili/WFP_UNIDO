@@ -12,17 +12,18 @@ library(RStoolbox)
 
 args <- commandArgs(trailingOnly = TRUE)
 
-image <- args[1]
-#var2 <- args[2]
-#var3 <- args[3]
+pred_image <- args[1] #The predicted image from Step 1 (ML Acacia Prediction)
+orig_image <- args[2] # The Original Raw Image
+out_poly <- args[3] #output polygon name with extension
+data_root <- args[4] #Path to data folder where you want to save results
 
-classif <- raster(image)
+classif <- raster(pred_image)
 
 acacia_campX <-classif
 acacia_campX[!acacia_campX==1]<-NA
 ##mapview(acacia_campX,map.types = "Esri.WorldImagery")#,maxpixels =  63201546)
 
-acc <- writeRaster(acacia_campX, "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_rcl_bin.tif",overwrite=TRUE) 
+acc <-  writeRaster(acacia_campX, paste(data_root,"out_rcl_bin.tif", sep = ""),overwrite=TRUE) 
 #acc_read <- raster(acc)
 acc_read <- raster("/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_rcl_bin.tif")
 

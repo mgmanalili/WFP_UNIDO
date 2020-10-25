@@ -1,0 +1,9 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <CategoryNames>
+      <Category></Category>
+      <Category>AC</Category>
+      <Category>SO</Category>
+    </CategoryNames>
+  </PAMRasterBand>
+</PAMDataset>
