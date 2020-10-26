@@ -11,3 +11,14 @@
 #### Main Developer: Michael Manalili (WFP)
 #### Remote Sensing Specialist: Sirio Modugno, PhD (WFP)
 #### Project Manager: Ashraf Abushady (UNIDO)
+---
+#### Bug Fixes
+
+Error: Kappa metric values are missing
+
+Issue: Data error (raster input)
+
+Solution:
+Please Check the Satellite Image or the Drone image and make sure it is in Multi-Color 3 Bands only and not in 4 Bands! If you are processing your image under ESRI ArcGIS, the software would automatically add a 4th Band called “Alpha” which improves the image for visualization.  However, the script is designed to calculate the Kappa metric values for 3 Bands only as that is the common standard in GIS.
+
+---
