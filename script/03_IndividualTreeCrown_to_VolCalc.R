@@ -27,7 +27,7 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
                 
                 #args <- commandArgs(trailingOnly = TRUE)
                 sat_img <- raster(arg1_image)
-                proj4string(sat_img)
+                #proj4string(sat_img)
                 ##imagery - An object of class raster on which to perform the segmentation. The image should be projected
                 ##epsg - The EPSG code of the reference system of the image.
                 ##searchWinSize - Size (in pixels) of the moving window used to the detect the local maxima. It should be an odd number larger than 3.
@@ -36,9 +36,9 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
                 ##DIST - Maximum value of the crown diameter of a detected tree (in meters).
                 ##th - Digital number value below which a pixel cannot be a local maxima.
                 ##ischm TRUE if the imagery is a Canopy Height Model (CHM). Default: FALSE.
-                acc_rpj <- projectRaster(sat_img, crs=CRS('+init=EPSG:32733'))
-                #seg <- itcIMG(sat_img,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
-                seg <- itcIMG(acc_rpj,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
+                #acc_rpj <- projectRaster(sat_img, crs=CRS('+init=EPSG:32733'))
+                seg <- itcIMG(sat_img,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
+                #seg <- itcIMG(acc_rpj,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
                 writeOGR(seg, arg2_out_raw, "segmentation", driver = "ESRI Shapefile")
                 
                 gridx <- readOGR(output_raw)

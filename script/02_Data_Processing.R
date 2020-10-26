@@ -14,29 +14,32 @@ args <- commandArgs(trailingOnly = TRUE)
 
 pred_image <- args[1] #The predicted image from Step 1 (ML Acacia Prediction)
 orig_image <- args[2] # The Original Raw Image
-out_poly <- args[3] #output polygon name with extension
-data_root <- args[4] #Path to data folder where you want to save results
-
+data_root <- args[3] #Path to data folder where you want to save results
+out_poly <- args[4] #output polygon of acacia for clipping with extension
+out_rast_rcl <- args[5] #output raster of the reclassification (0-1) with extension
+out_rast_f <- args[6] #output clipped raster name with extension
+out_grid <- args[7] #output grid shapefile with extension
 classif <- raster(pred_image)
 
 acacia_campX <-classif
 acacia_campX[!acacia_campX==1]<-NA
 ##mapview(acacia_campX,map.types = "Esri.WorldImagery")#,maxpixels =  63201546)
 
-acc <-  writeRaster(acacia_campX, paste(data_root,"out_rcl_bin.tif", sep = ""),overwrite=TRUE) 
+acc <-  writeRaster(acacia_campX, paste(data_root,out_rast_rcl, sep = ""),overwrite=TRUE) 
 #acc_read <- raster(acc)
-acc_read <- raster("/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_rcl_bin.tif")
+acc_read <- raster(paste(data_root,out_rast_rcl, sep = ""))
 
 acc_rpj <- projectRaster(acc_read, crs=CRS('+init=EPSG:32733'))
 temp_v <- rasterToPolygons(acc_read, fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=TRUE)
-v_save <- writeOGR(temp_v, "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_rcl_bin_poly.shp", "segmentation", driver = "ESRI Shapefile")
+v_save <- writeOGR(temp_v, paste(data_root,out_poly, sep = ""), "segmentation", driver = "ESRI Shapefile")
 v = v_save
 ###----------------CLIPPING SCRIPT---------------------###
 
 ## Example SpatialPolygonsDataFrame
-v <- read_sf("/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_rcl_bin_poly.shp")
+v <- read_sf(paste(data_root,out_poly, sep = ""))
 v_tf <- st_transform(v, crs = 32733)
 ## This is the 3 band raster ORIGINAL from DG (mosaic AOI)
+#r <- stack(orig_image)
 r <- stack("/Users/michael/GEO/DataScience/acacia_namibia/data/Camp4_utm.tif")
 
 ## crop and mask
@@ -45,7 +48,7 @@ m <- mask(c,v_tf)
 ##mapview(m,map.types = "Esri.WorldImagery")
 
 # Save raster
-writeRaster(m, "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_trees_only.tif",overwrite=TRUE)
+writeRaster(m, paste(data_root,out_rast_f, sep = ""),overwrite=TRUE)
 
 ###----------------GRIDDING SCRIPT---------------------###
 e <- extent(c)
@@ -61,4 +64,4 @@ grid <- shp %>%
   st_intersection(shp)  
 
 ##mapview(grid,map.types = "Esri.WorldImagery")
-st_write(grid, "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_grid.shp")
+st_write(grid, paste(data_root,out_grid, sep = ""))

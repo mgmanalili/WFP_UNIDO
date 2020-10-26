@@ -83,8 +83,7 @@ confusionMatrix(cvPredictions$pred,cvPredictions$obs)$overall
 prediction <- predict(predStack,model)
 
 #assign some colors that are easy to interpret visually (optional only if running inside R)
-#cols_df <- data.frame("Type_en"=c("AC","BU","DV","PO", "RD","SO","SV","SH","GR"),
-#                      "col"=c("red", "white", "orange","green","black","blue","pink", "yellow", "violet"))
+#cols_df <- data.frame("Type_en"=c("AC","BU","DV","PO", "RD","SO","SV","SH","GR")
 
 v <- read_sf(roi)
 x <- unique(v[["type"]])
