@@ -6,6 +6,17 @@ library(mapview)
 library(ggplot2)
 library(rgdal)
 library(RStoolbox)
+library(doParallel)  #Foreach Parallel Adaptor 
+library(foreach)
+library(parallel)
+
+## Activate Parallel Processing
+detectCores()
+# Detect the number of available cores and create cluster
+cl <- parallel::makeCluster(detectCores())
+
+# Activate cluster for foreach library
+doParallel::registerDoParallel(cl)
 
 ###----------------RECLASSIFICATION SCRIPT---------------------###
 ## This will take the output of the ML_SpatialPrediction_auto.R script
@@ -21,6 +32,7 @@ out_rast_f <- args[6] #output clipped raster name with extension
 out_grid <- args[7] #output grid shapefile with extension
 classif <- raster(pred_image)
 
+
 acacia_campX <-classif
 acacia_campX[!acacia_campX==1]<-NA
 ##mapview(acacia_campX,map.types = "Esri.WorldImagery")#,maxpixels =  63201546)
@@ -30,9 +42,15 @@ acc <-  writeRaster(acacia_campX, paste(data_root,out_rast_rcl, sep = ""),overwr
 acc_read <- raster(paste(data_root,out_rast_rcl, sep = ""))
 
 acc_rpj <- projectRaster(acc_read, crs=CRS('+init=EPSG:32733'))
-temp_v <- rasterToPolygons(acc_read, fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=TRUE)
+#temp_v <- rasterToPolygons(acc_read, fun=NULL, n=4, na.rm=TRUE, digits=12, dissolve=TRUE)
+
+beginCluster(n=10)
+temp_v <- sf::as_Spatial(sf::st_as_sf(stars::st_as_stars(acc_read), 
+                                         as_points = FALSE, merge = TRUE))
+endCluster()
 v_save <- writeOGR(temp_v, paste(data_root,out_poly, sep = ""), "segmentation", driver = "ESRI Shapefile")
 v = v_save
+
 ###----------------CLIPPING SCRIPT---------------------###
 
 ## Example SpatialPolygonsDataFrame

@@ -12,7 +12,17 @@ library(itcSegment)
 library(foreign)
 library(doParallel)  #Foreach Parallel Adaptor 
 library(foreach)
+library(parallel)
 
+set.seed(100)
+
+## Activate Parallel Processing
+detectCores()
+# Detect the number of available cores and create cluster
+cl <- parallel::makeCluster(detectCores())
+
+# Activate cluster for foreach library
+doParallel::registerDoParallel(cl)
 args <- commandArgs(trailingOnly = TRUE)
 
 arg1_image <- args[1] # Input clipped image from Step 2 (data processing)
@@ -37,6 +47,7 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
                 ##th - Digital number value below which a pixel cannot be a local maxima.
                 ##ischm TRUE if the imagery is a Canopy Height Model (CHM). Default: FALSE.
                 #acc_rpj <- projectRaster(sat_img, crs=CRS('+init=EPSG:32733'))
+                
                 seg <- itcIMG(sat_img,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
                 #seg <- itcIMG(acc_rpj,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
                 writeOGR(seg, arg2_out_raw, "segmentation", driver = "ESRI Shapefile")
@@ -53,14 +64,17 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
                 gridx$vol <- (-0.0263+0.0024)*gridx$CR_sqrd
                 st_write(st_as_sf(gridx),arg3_result)
                 
+                
                 }
 
 #segmentation("/Users/michael/GEO/DataScience/acacia_namibia/sample_data/out_trees_only.tif", 
 #             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/acacia_poly_raw.shp",
 #             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/acacia_poly_vol_FINAL.shp")
 
-segmentation(arg1_image, arg2_out_raw, arg3_result)
-
+beginCluster(n=10)
+s <- segmentation(arg1_image, arg2_out_raw, arg3_result)
+clusterR(s)
+endCluster()
 #Below is a work-in progress. DO NOT DELETE! Keep commented. - MM
 #segmentation()
 #file_list <- file('/Users/michael/GEO/DataScience/acacia_namibia/input_tif.txt')
