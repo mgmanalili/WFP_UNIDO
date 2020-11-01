@@ -9,6 +9,8 @@ library(RStoolbox)
 library(doParallel)  #Foreach Parallel Adaptor 
 library(foreach)
 library(parallel)
+#install.packages("evaluate")
+#install.packages("snow")
 
 ## Activate Parallel Processing
 detectCores()
@@ -61,13 +63,14 @@ v_tf <- st_transform(v, crs = 32733)
 r <- stack("/Users/michael/GEO/DataScience/acacia_namibia/data/Camp4_utm.tif")
 
 ## crop and mask
+beginCluster(n=10)
 c <- crop(r, v_tf)
 m <- mask(c,v_tf)
 ##mapview(m,map.types = "Esri.WorldImagery")
 
 # Save raster
 writeRaster(m, paste(data_root,out_rast_f, sep = ""),overwrite=TRUE)
-
+endCluster()
 ###----------------GRIDDING SCRIPT---------------------###
 e <- extent(c)
 p <- as(e, 'SpatialPolygons')
