@@ -56,11 +56,11 @@ v = v_save
 ###----------------CLIPPING SCRIPT---------------------###
 
 ## Example SpatialPolygonsDataFrame
-v <- read_sf(paste(data_root,out_poly, sep = ""))
-v_tf <- st_transform(v, crs = 32733)
+v_tf <- read_sf(paste(data_root,out_poly, sep = ""))
+
 ## This is the 3 band raster ORIGINAL from DG (mosaic AOI)
 #r <- stack(orig_image)
-r <- stack("/Users/michael/GEO/DataScience/acacia_namibia/data/Camp4_utm.tif")
+r <- stack(orig_image)
 
 ## crop and mask
 beginCluster(n=10)

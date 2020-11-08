@@ -71,10 +71,26 @@ segmentation <- function(arg1_image, arg2_out_raw, arg3_result)
 #             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/acacia_poly_raw.shp",
 #             "/Users/michael/GEO/DataScience/acacia_namibia/sample_data/acacia_poly_vol_FINAL.shp")
 
-beginCluster(n=10)
+beginCluster(n=11)
 s <- segmentation(arg1_image, arg2_out_raw, arg3_result)
 clusterR(s)
 endCluster()
+
+
+# Detect the number of available cores and create cluster
+#cl <- parallel::makeCluster(detectCores())
+# Run parallel computation
+#time_parallel <- system.time(
+#  parallel::parLapply(cl,s)
+#)
+# Close cluster
+#parallel::stopCluster(cl)
+
+
+
+#r <- mclapply(1:10, s {Sys.sleep(10)}, mc.cores = 10)  
+
+#r
 #Below is a work-in progress. DO NOT DELETE! Keep commented. - MM
 #segmentation()
 #file_list <- file('/Users/michael/GEO/DataScience/acacia_namibia/input_tif.txt')
