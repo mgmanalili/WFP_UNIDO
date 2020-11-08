@@ -194,7 +194,7 @@ ffsmodel_spatial <- ffs(trainDat[,predictors],
 #print(ffsmodel_spatial)
 
 prediction_ffs <- predict(predStack,ffsmodel_spatial)
-spplot(prediction_ffs,col.regions=as.character(cols_df$col))
+#spplot(prediction_ffs,col.regions=as.character(cols_df$col))
 cvPredictions <- ffsmodel_spatial$pred[ffsmodel_spatial$pred$mtry==ffsmodel_spatial$bestTune$mtry,]
 confusionMatrix(cvPredictions$pred,cvPredictions$obs)$overall
 writeRaster(prediction_ffs, out,overwrite=TRUE)

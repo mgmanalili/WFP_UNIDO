@@ -1,0 +1,8 @@
+/Users/michael/GEO/DataScience/acacia/data/main/main.tif
+Main
+/Users/michael/GEO/DataScience/acacia/data/roi.shp
+/Users/michael/GEO/DataScience/acacia/data/main
+big.tif
+polyclip_big.shp
+bin_reclass_big.tif
+itc_big.tif
