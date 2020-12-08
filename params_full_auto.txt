@@ -1,0 +1,11 @@
+/Users/michael/Desktop/r_full_auto/raw_4_ML.tif
+raw_4_ML
+/Users/michael/Desktop/r_full_auto/roi.shp
+/Users/michael/Desktop/r_full_auto
+c4_pred.tif
+c4_polyclip.shp
+c4_rcl.tif
+c4_itc_clip.tif
+c4_itc_rpj.tif
+itc_novol.shp
+itc_vol.shp

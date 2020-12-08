@@ -1,5 +1,5 @@
 /Users/michael/GEO/DataScience/acacia/data/main/main.tif
-Main
+main
 /Users/michael/GEO/DataScience/acacia/data/roi.shp
 /Users/michael/GEO/DataScience/acacia/data/main
 big.tif

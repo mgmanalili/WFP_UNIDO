@@ -7,6 +7,7 @@ library(CAST)
 library(plainview) 
 library(rgdal)
 library(glcm)
+library(itcSegment)
 library(RStoolbox)
 library(maptools)
 library(doParallel)  #Foreach Parallel Adaptor 
@@ -32,13 +33,13 @@ doParallel::registerDoParallel(cl)
 #out_poly <- args[6] #output polygon of acacia for clipping with extension
 #out_rast_rcl <- args[7] #output raster of the reclassification (0-1) with extension
 #out_rast_f <- args[8] #output clipped raster name with extension (itc_clipped.tif)
-#arg2_out_raw <- args[9] # Output ITC segmentation shapefile in raw form (no volume computation)
-#arg3_result <- args[10] # Output ITC segmentation shapefile with volume computation
+#out_rast_prj <- args[9] #ITC projected raster (itc_reproject.tif)
+#itc_out_raw <- args[10] # Output ITC segmentation shapefile in raw form (no volume computation)
+#itc_vol <- args[11] # Output ITC segmentation shapefile with volume computation
 #------
 
 args <- commandArgs(trailingOnly = TRUE)
 params <- args[1] 
-#params <- "/Users/michael/GEO/DataScience/acacia/params.txt"
 con <- file(params, open='r')
 #con <- file(params, open='r')
 image <- readLines(con)[[1]]
@@ -64,15 +65,17 @@ out_rast_rcl = out_rast_rcl
 con <- file(params, open='r')
 out_rast_f <- readLines(con)[[8]]
 out_rast_f = out_rast_f
-## Uncomment once the itcsegment parallel is fixed
-#con <- file(params, open='r')
-#arg2_out_raw <- readLines(con)[[9]]
-#arg2_out_raw = arg2_out_raw
-#con <- file(params, open='r')
-#arg3_result <- readLines(con)[[10]]
-#arg3_result = arg3_result
+con <- file(params, open='r')
+out_rast_prj <- readLines(con)[[9]]
+out_rast_prj = out_rast_prj
+con <- file(params, open='r')
+itc_out_raw <- readLines(con)[[10]]
+itc_out_raw = itc_out_raw
+con <- file(params, open='r')
+itc_vol <- readLines(con)[[11]]
+itc_vol = itc_vol
 
-
+set.seed(100)
 ##----------------------------START OF SCRIPT----------------------------##
 #The predicted image from Step 1 (ML Acacia Prediction)
 orig_image = image # The Original Raw Image
@@ -97,10 +100,10 @@ pca_brick <- predict(sat_img_s, pca, index=1:3) # create new rasters based on PC
 ## MACHINE LEARNING MODEL
 predStack <- stack(rglcm,pca_brick,sat_img) #Add DEM - Resample and clip in QGIS
 nlayers(predStack)
-names(predStack)
+#names(predStack)
 names(predStack) <- c('glcm_variance', 'glcm_homogeneity', 'glcm_dissimilarity',
                       'glcm_entropy','layer.1','layer.2','layer.3',name_rast)
-names(predStack)
+#names(predStack)
 #spplot(scale(predStack))
 
 trainSites <- st_transform(trainSites,crs=projection(predStack))
@@ -201,7 +204,7 @@ confusionMatrix(cvPredictions$pred,cvPredictions$obs)$overall
 writeRaster(prediction_ffs, out,overwrite=TRUE)
 endCluster()
 ##
-
+print("Model prediction completed.")
 ###----------------RECLASSIFICATION SCRIPT---------------------###
 ## This will take the output of the ML_SpatialPrediction_auto.R script
 
@@ -223,7 +226,7 @@ temp_v <- sf::as_Spatial(sf::st_as_sf(stars::st_as_stars(acc_read),
 endCluster()
 v_save <- writeOGR(temp_v, paste(data_root,out_poly, sep = ""), "segmentation", driver = "ESRI Shapefile")
 v = v_save
-
+print("Reclassification Completed.")
 ###----------------CLIPPING SCRIPT---------------------###
 
 ## Example SpatialPolygonsDataFrame
@@ -242,7 +245,7 @@ endCluster()
 # Save raster
 writeRaster(m, paste(data_root,out_rast_f, sep = ""),overwrite=TRUE)
 
-print("Script Finished Processing...")
+print("Raster masking completed.")
 ###----------------GRIDDING SCRIPT---------------------###
 #e <- extent(c)
 #p <- as(e, 'SpatialPolygons')
@@ -257,18 +260,30 @@ print("Script Finished Processing...")
 #st_write(grid, paste(data_root,out_grid, sep = ""))
 
 ###----------------SEGMENTATION---------------------###
-#sat_img <- raster(out_rast_f)
-#seg <- itcIMG(sat_img,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
-#clusterR(seg)
-#writeOGR(seg, paste(data_root,arg2_out_raw, sep = ""), "segmentation", driver = "ESRI Shapefile")
+print("Segmentation has started. This will take a while...")
+beginCluster(n=11)
+r <- raster(paste(data_root,out_rast_f, sep = ""))
+sr <- "+proj=utm +zone=33 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+projected_raster <- projectRaster(r, crs = sr)
+# Write the RasterLayer to disk (See datatype documentation for other formats)
+writeRaster(projected_raster, paste(data_root,out_rast_prj, sep = ""), overwrite=TRUE)
+sat_img <- raster(paste(data_root,out_rast_prj, sep = ""))
 
-#gridx <- readOGR(output_raw)
-#gridx$CR_m <- sqrt(gridx$CA_m2 / 3.1416)
-#gridx$CR_dia <-gridx$CR_m*2
-#gridx$CR_sqrd <-gridx$CR_dia^2
+seg <- itcIMG(sat_img,epsg=32733,search = 9, TRESHSeed =  0.5, TRESHCrown = 0.5, DIST = 7, th=5, ischm = FALSE)
+writeOGR(seg, paste(data_root,itc_out_raw, sep = ""), "segmentation", driver = "ESRI Shapefile")
+
+print("Segmentation completed.")
+
+gridx <- readOGR(paste(data_root,itc_out_raw, sep = ""))
+gridx$CR_m <- sqrt(gridx$CA_m2 / 3.1416)
+gridx$CR_dia <-gridx$CR_m*2
+gridx$CR_sqrd <-gridx$CR_dia^2
 
 ###Ashraf to replace new vol formula
-#gridx$vol <- (-0.0263+0.0024)*gridx$CR_sqrd
-#st_write(st_as_sf(gridx),paste(data_root,arg3_result, sep = ""))
-##-----------------END OF SCRIPT--------------------##
+gridx$vol <- (-0.0263+0.0024)*gridx$CR_sqrd
+st_write(st_as_sf(gridx),paste(data_root,itc_vol, sep = ""))
 
+endCluster()
+print("Volume computation completed.")
+print("Script Finished Processing...")
+##-----------------END OF SCRIPT--------------------##
